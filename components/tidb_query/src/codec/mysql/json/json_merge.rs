@@ -46,6 +46,29 @@ impl Json {
             (obj, suffix) => Json::Array(vec![obj, suffix]),
         }
     }
+
+    // `merge_patch` is the implementation for JSON_MERGE_PATCH in mysql
+    // https://dev.mysql.com/doc/refman/8.0/en/json-modification-functions.html#function_json-merge-patch
+
+    pub fn merge_patch(self, to_merge: Json) -> Json {
+        match (self) {
+            Json::Object(obj) => match to_merge {
+                Json::Object(merge_obj) => {
+                    for (sub_key, sub_value) in merge_obj {
+                        let v = if Some(value) = obj.remove(&sub_key) {
+                            value.merge(sub_value)
+                        } else {
+                            sub_value
+                        };
+                        obj.insert(sub_key, v);
+                    }
+                    Json::Object(obj)
+                }
+                _ => to_merge,
+            },
+            _ => to_merge,
+        }
+    }
 }
 
 #[cfg(test)]
